@@ -41,28 +41,14 @@ if game.PlaceId == 258258996 then
 									fireproximityprompt(item)
 									wait(0.5)
 									fireproximityprompt(item)
+									wait(0.2)
 								end
 							end
 						end
 					end
 				end
-
-				wait(0.5)
-				for x, y in pairs(game.Workspace:GetDescendants()) do
-					if y.name == "Owner" then
-						if y.Value == username then
-							me:MoveTo(y.Parent.Base.Position)
-							wait(1)
-							game.ReplicatedStorage.Rebirth:InvokeServer()
-							wait(3)
-							game.ReplicatedStorage.Layouts:InvokeServer("Load", chosen)
-							wait(2)
-						end
-					end
-				end
 			end
 		end
-	end	
 
 
 
