@@ -49,8 +49,7 @@ if game.PlaceId == 258258996 then
 				end
 			end
 		end
-
-
+end
 
 	-- Tabs
 	local Easter2024 = Window:MakeTab({
