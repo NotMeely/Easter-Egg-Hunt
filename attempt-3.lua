@@ -1,15 +1,14 @@
-
 if game.PlaceId == 258258996 then
 	local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/NotMeely/Easter-Egg-Hunt/refs/heads/main/PLEASE')))()
 		local Window = OrionLib:MakeWindow({Name = "MH Script By MEELY and ADONIS", HidePremium = false, IntroText = "Hope You Enjoy!", SaveConfig = true, ConfigFolder = "MinersHaven"})
 
 		-- Values
-		getgenv().autoEgg = true
+		getfenv().autoEgg = true
 
 
 		--Functions
 		function autoEgg()
-			while getgenv().autoEgg == true do
+			while getfenv().autoEgg == true do
 				me = game.Players.LocalPlayer.Character
 				username = game.Players.LocalPlayer.Name
 				if game.workspace.Map:FindFirstChild("Trees") then --game.workspace.Map:FindFirstChild("Rocks"):Destroy()
@@ -64,7 +63,7 @@ if game.PlaceId == 258258996 then
 			Name = "Auto Farm Eggs",
 			Default = false,
 			Callback = function(Value)
-				getgenv().autoEgg = (Value)
+				getfenv().autoEgg = (Value)
 				autoEgg()
 			end    
 		})
