@@ -1,5 +1,6 @@
+
 if game.PlaceId == 258258996 then
-	local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/BlueaqeR/scripts-lol/main/MinersHavenT')))()
+	local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/NotMeely/Easter-Egg-Hunt/refs/heads/main/PLEASE')))()
 		local Window = OrionLib:MakeWindow({Name = "MH Script By MEELY and ADONIS", HidePremium = false, IntroText = "Hope You Enjoy!", SaveConfig = true, ConfigFolder = "MinersHaven"})
 
 		-- Values
