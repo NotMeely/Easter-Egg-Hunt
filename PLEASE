@@ -54,6 +54,9 @@ kVars.GUI.window = kVars.GUI.library:CreateMain({
 kVars.GUI.page.main = kVars.GUI.window:CreateCategory("Main")
 kVars.GUI.section.farm = kVars.GUI.page.main:CreateSection("Farm")
 
+kVars.GUI.page.reborn = kVars.GUI.window:CreateCategory("Reborn")
+kVars.GUI.section.auto = kVars.GUI.page.main:CreateSection("Auto")
+
 kVars.GUI.page.teleport = kVars.GUI.window:CreateCategory("Teleport")
 kVars.GUI.section.tpToPlayer = kVars.GUI.page.teleport :CreateSection("Teleport To Player")
 
