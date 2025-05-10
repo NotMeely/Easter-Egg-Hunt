@@ -1,0 +1,276 @@
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualUser = game:GetService("VirtualUser")
+local Workspace = game:GetService("Workspace")
+
+-- Player references
+local self = Players.LocalPlayer
+local char = self.Character or self.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+local mouse = self:GetMouse()
+local value = self:WaitForChild("Rebirths")
+
+-- Load Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Window
+local Window = Rayfield:CreateWindow({
+	Name = "Shhhhh! - Meely & Adonis",
+	LoadingTitle = "Miner's Haven Script",
+	LoadingSubtitle = "By Skinny & Fat Studios",
+	Theme = "Amethyst",
+	KeySystem = false
+})
+
+-- Tabs and sections
+local MainTab = Window:CreateTab("Farm")
+MainTab:CreateSection("Auto")
+
+local AutoCrateTab = Window:CreateTab("AutoCrate")
+AutoCrateTab:CreateSection("Crates")
+
+-- State variables
+local rebirthFarmingEnabled = false
+local enableSecondLayout = false
+local layoutDelay = 0
+local layoutOne = "Layout1"
+local layoutTwo = "Layout2"
+local autoRebirthEnabled = false
+local isAutoCrateEnabled = false
+local autoCrateConnection = nil
+local isAutoCrateActive = false
+local isEasterEggEnabled = false
+local stopEasterEggs = false
+
+-- Anti-AFK
+Players.LocalPlayer.Idled:Connect(function()
+	VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+	task.wait(1)
+	VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+end)
+
+-- Functions for AutoCrate
+local function startAutoCrate()
+	if isAutoCrateActive then return end
+	isAutoCrateActive = true
+
+	if not game.Workspace:FindFirstChild("Boxes") then
+		warn("Boxes folder does not exist in Workspace!")
+		return
+	end
+
+	local function interactWithCrates()
+		for _, v1 in pairs(game.Workspace.Boxes:GetChildren()) do
+			if v1:IsA("MeshPart") or v1:IsA("Part") then
+				local OldPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+				game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v1.CFrame
+				wait(.1)
+				firetouchinterest(v1, game.Players.LocalPlayer.Character.HumanoidRootPart, 0)
+				firetouchinterest(v1, game.Players.LocalPlayer.Character.HumanoidRootPart, 1)
+				wait(.1)
+				game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = OldPos
+			end
+		end
+	end
+
+	interactWithCrates()
+
+	autoCrateConnection = game.Workspace.Boxes.ChildAdded:Connect(function(v1)
+		wait(.5)
+		if v1:IsA("MeshPart") or v1:IsA("Part") then
+			local OldPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v1.CFrame
+			wait(.1)
+			firetouchinterest(v1, game.Players.LocalPlayer.Character.HumanoidRootPart, 0)
+			firetouchinterest(v1, game.Players.LocalPlayer.Character.HumanoidRootPart, 1)
+			wait(.1)
+			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = OldPos
+		end
+	end)
+
+	game.StarterGui:SetCore("SendNotification", {
+		Title = "AutoCrate Script",
+		Text = "Script Made By DINO#1390"
+	})
+end
+
+local function stopAutoCrate()
+	if not isAutoCrateActive then return end
+	if autoCrateConnection then
+		autoCrateConnection:Disconnect()
+		autoCrateConnection = nil
+	end
+	isAutoCrateActive = false
+
+	game.StarterGui:SetCore("SendNotification", {
+		Title = "AutoCrate Script",
+		Text = "AutoCrate stopped."
+	})
+end
+
+-- Main Functions
+local function loadLayouts()
+	task.spawn(function()
+		ReplicatedStorage.Layouts:InvokeServer("Load", layoutOne)
+		task.wait(layoutDelay)
+		if enableSecondLayout then
+			ReplicatedStorage.Layouts:InvokeServer("Load", layoutTwo)
+		end
+	end)
+end
+
+local function farmRebirth()
+	task.spawn(function()
+		while autoRebirthEnabled do
+			ReplicatedStorage.Rebirth:InvokeServer(26)
+			task.wait()
+		end
+	end)
+end
+
+-- UI Elements for Main Tab
+MainTab:CreateToggle({
+	Name = "Rebirth Farm",
+	CurrentValue = false,
+	Flag = "rebfarm",
+	Callback = function(val)
+		rebirthFarmingEnabled = val
+		if val then
+			loadLayouts()
+			farmRebirth()
+		end
+	end
+})
+
+MainTab:CreateToggle({
+	Name = "Enable Second Layout?",
+	CurrentValue = false,
+	Flag = "seclayout",
+	Callback = function(val)
+		enableSecondLayout = val
+	end
+})
+
+MainTab:CreateToggle({
+	Name = "Auto Rebirth",
+	CurrentValue = false,
+	Flag = "aReb",
+	Callback = function(val)
+		autoRebirthEnabled = val
+		if val then
+			farmRebirth()
+		end
+	end
+})
+
+MainTab:CreateDivider()
+
+-- Create the "Layouts" section right after the divider
+MainTab:CreateSection("Layouts")
+
+MainTab:CreateInput({
+	Name = "Time Between Layouts (Seconds)",
+	PlaceholderText = "0",
+	RemoveTextAfterFocusLost = true,
+	Callback = function(val)
+		layoutDelay = tonumber(val) or 0
+	end
+})
+
+MainTab:CreateDropdown({
+	Name = "Choose First Layout",
+	Options = {"Layout1", "Layout2", "Layout3"},
+	CurrentOption = "Layout1",
+	Flag = "layoutone",
+	Callback = function(option)
+		layoutOne = option
+	end
+})
+
+MainTab:CreateDropdown({
+	Name = "Choose Second Layout",
+	Options = {"Layout1", "Layout2", "Layout3"},
+	CurrentOption = "Layout2",
+	Flag = "layoutwo",
+	Callback = function(option)
+		layoutTwo = option
+	end
+})
+
+-- UI Elements for AutoCrate Tab
+AutoCrateTab:CreateToggle({
+	Name = "AutoCrate",
+	CurrentValue = isAutoCrateEnabled,
+	Flag = "AutoCrateToggle",
+	Callback = function(state)
+		isAutoCrateEnabled = state
+		if isAutoCrateEnabled then
+			startAutoCrate()
+		else
+			stopAutoCrate()
+		end
+	end
+})
+
+AutoCrateTab:CreateDivider()
+
+-- Create the "Easter" section right after the divider in the AutoCrate tab
+AutoCrateTab:CreateSection("Easter")
+
+-- Easter Egg Interaction
+local function interactWithEasterEggs()
+	local originalPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame  -- Save original position
+	local easterthing = Workspace:FindFirstChild("Easter")
+	if not easterthing then return end
+
+	local mapthing = Workspace.Map:FindFirstChild("EGG_SPAWNS")
+	if not mapthing then return end
+
+	-- Easter Island Egg Spawns
+	local eggSpawns = easterthing:FindFirstChild("EASTER ISLAND EGG SPAWNS")
+	if eggSpawns then
+		for _, v in ipairs(eggSpawns:GetChildren()) do
+			if #v:GetChildren() > 0 then
+				for _, child in ipairs(v:GetChildren()) do
+					if stopEasterEggs then return end
+					game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = child.CFrame
+					task.wait(.5)
+					fireproximityprompt(child.ProximityPrompt)
+					wait(.5)
+				end
+			end
+		end
+	end
+
+	-- Map Egg Spawns
+	for _, v in ipairs(mapthing:GetChildren()) do
+		if #v:GetChildren() > 0 then
+			for _, child in ipairs(v:GetChildren()) do
+				if stopEasterEggs then return end
+				game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = child.CFrame
+				task.wait(.5)
+				fireproximityprompt(child.ProximityPrompt)
+				wait(.5)
+			end
+		end
+	end
+
+	-- Return to the original position after interaction
+	game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = originalPosition
+end
+
+AutoCrateTab:CreateToggle({
+	Name = "AutoEgg",
+	CurrentValue = isEasterEggEnabled,
+	Flag = "EasterEggToggle",
+	Callback = function(state)
+		isEasterEggEnabled = state
+		stopEasterEggs = not state
+		if state then
+			interactWithEasterEggs()
+		end
+	end
+})
+
+-- Auto load when Rebirths value
