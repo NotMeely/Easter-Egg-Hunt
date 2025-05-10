@@ -8,9 +8,8 @@ local value = game:GetService("Players").LocalPlayer.Rebirths
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/TheAbsolutionism/Wally-GUI-Library-V2-Remastered/main/Library%20Code", true))() --//Wally UI Lib V2 Remastered by: https://forum.robloxscripts.com/showthread.php?tid=3180
 library.options.underlinecolor = 'rainbow' --//makes the underline of each "window" rainbow
 library.options.toggledisplay = 'Fill' --//Applies to all toggles, [Fill] OFF = RED, ON = GREEN [CHECK] OFF = BLANK,ON = CHECKMARK
-local mainW = library:CreateWindow("TEST") --//Name of window
-local Section = mainW:Section('TEST 1 FARM',true)
-local Section = mainW:Section('TEST 2 FARM',true)
+local mainW = library:CreateWindow("Miner's Haven") --//Name of window
+local Section = mainW:Section('TEST',true)
 
 --//AntiAFK Credits to: https://v3rmillion.net/showthread.php?tid=772135
 local vu = game:GetService("VirtualUser")
