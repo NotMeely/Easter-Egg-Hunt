@@ -1,5 +1,5 @@
 if game.PlaceId == 258258996 then
-	local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+	local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/dady172172/Roblox-Cheat-Scripts/refs/heads/master/Miner's%20Haven%20GUI.lua')))()
 	local Window = OrionLib:MakeWindow({Name = "MH Script By MEELY and ADONIS", HidePremium = false, IntroText = "Hope You Enjoy!", SaveConfig = true, ConfigFolder = "MinersHaven"})
 
 	-- Values
