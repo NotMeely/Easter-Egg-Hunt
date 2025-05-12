@@ -231,3 +231,123 @@ AutoTab:CreateToggle({
 		end
 	end
 })
+
+--// PLAYER TAB
+local PlayerTab = Window:CreateTab("Player")
+PlayerTab:CreateSection("Movement Controls")
+
+-- Walk Speed
+PlayerTab:CreateSlider({
+	Name = "Walk Speed",
+	Range = {16, 200},
+	Increment = 1,
+	Suffix = "Speed",
+	CurrentValue = 16,
+	Callback = function(Value)
+		local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+		local humanoid = char:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid.WalkSpeed = Value
+		end
+	end,
+})
+
+-- Jump Power
+PlayerTab:CreateSlider({
+	Name = "Jump Power",
+	Range = {50, 300},
+	Increment = 5,
+	Suffix = "Power",
+	CurrentValue = 50,
+	Callback = function(Value)
+		local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+		local humanoid = char:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid.JumpPower = Value
+		end
+	end,
+})
+
+PlayerTab:CreateDivider()
+PlayerTab:CreateSection("Fly Controls")
+
+-- Fly Speed Variable
+getgenv().FlySpeed = 50
+
+-- Fly Speed Slider
+PlayerTab:CreateSlider({
+	Name = "Fly Speed",
+	Range = {10, 300},
+	Increment = 5,
+	Suffix = "Speed",
+	CurrentValue = getgenv().FlySpeed,
+	Callback = function(Value)
+		getgenv().FlySpeed = Value
+	end,
+})
+
+-- Fly Mode
+local flytoggle = false
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+
+PlayerTab:CreateToggle({
+	Name = "Fly Mode",
+	CurrentValue = false,
+	Callback = function(Value)
+		flytoggle = Value
+		local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+		local hrp = char:WaitForChild("HumanoidRootPart")
+
+		if Value then
+			local bv = Instance.new("BodyVelocity")
+			bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+			bv.Velocity = Vector3.zero
+			bv.Name = "FlyVelocity"
+			bv.Parent = hrp
+
+			local function flyLoop()
+				while flytoggle and hrp and bv.Parent do
+					local camCF = Workspace.CurrentCamera.CFrame
+					local moveVec = Vector3.zero
+
+					if UIS:IsKeyDown(Enum.KeyCode.W) then moveVec += camCF.LookVector end
+					if UIS:IsKeyDown(Enum.KeyCode.S) then moveVec -= camCF.LookVector end
+					if UIS:IsKeyDown(Enum.KeyCode.A) then moveVec -= camCF.RightVector end
+					if UIS:IsKeyDown(Enum.KeyCode.D) then moveVec += camCF.RightVector end
+					if UIS:IsKeyDown(Enum.KeyCode.Space) then moveVec += camCF.UpVector end
+					if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then moveVec -= camCF.UpVector end
+
+					bv.Velocity = moveVec.Magnitude > 0 and moveVec.Unit * getgenv().FlySpeed or Vector3.zero
+					task.wait()
+				end
+			end
+
+			task.spawn(flyLoop)
+		else
+			local existingBV = hrp:FindFirstChild("FlyVelocity")
+			if existingBV then existingBV:Destroy() end
+		end
+	end,
+})
+
+PlayerTab:CreateDivider()
+PlayerTab:CreateSection("Utilities")
+
+PlayerTab:CreateButton({
+	Name = "Reset Movement to Default",
+	Callback = function()
+		local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+		local humanoid = char:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid.WalkSpeed = 16
+			humanoid.JumpPower = 50
+		end
+		getgenv().FlySpeed = 50
+		Rayfield:Notify({
+			Title = "Reset",
+			Content = "WalkSpeed, JumpPower, and FlySpeed reset to default.",
+			Duration = 5
+		})
+	end,
+})
