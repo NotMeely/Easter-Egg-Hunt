@@ -153,6 +153,9 @@ local function getHRP()
 	return char:FindFirstChild("HumanoidRootPart")
 end
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+
 AutoTab:CreateToggle({
 	Name = "Auto Open Crates",
 	CurrentValue = false,
@@ -162,19 +165,18 @@ AutoTab:CreateToggle({
 			task.spawn(function()
 				while getgenv().AutoCrateOpen do
 					pcall(function()
-						local cratesGui = Players.LocalPlayer.PlayerGui:FindFirstChild("Inventory") and Players.LocalPlayer.PlayerGui.Inventory:FindFirstChild("Frame") and Players.LocalPlayer.PlayerGui.Inventory.Frame:FindFirstChild("CrateInventory")
-						if cratesGui then
-							for _, item in pairs(cratesGui:GetChildren()) do
-								if item:IsA("Frame") and item:FindFirstChild("Amount") then
-									local amountText = item.Amount.Text:match("%d+")
-									local amount = tonumber(amountText)
+						local crateInventory = Players.LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("Inventory")
+						if crateInventory and crateInventory:FindFirstChild("Frame") and crateInventory.Frame:FindFirstChild("CrateInventory") then
+							for _, crate in pairs(crateInventory.Frame.CrateInventory:GetChildren()) do
+								if crate:IsA("Frame") and crate:FindFirstChild("Amount") then
+									local amount = tonumber(crate.Amount.Text:match("%d+"))
 									if amount and amount > 0 then
-										for i = 1, amount do
-											local crateRemote = ReplicatedStorage:FindFirstChild("OpenCrate")
-											if crateRemote then
-												crateRemote:InvokeServer(item.Name)
+										local openRemote = ReplicatedStorage:FindFirstChild("OpenCrate")
+										if openRemote then
+											for i = 1, amount do
+												openRemote:InvokeServer(crate.Name)
+												task.wait(0.5)
 											end
-											task.wait(1) -- Delay to avoid rapid calls
 										end
 									end
 								end
@@ -185,7 +187,7 @@ AutoTab:CreateToggle({
 				end
 			end)
 		end
-	end
+	end,
 })
 
 AutoTab:CreateToggle({
