@@ -20,16 +20,47 @@ local Window = Rayfield:CreateWindow({
 	LoadingTitle = "Miner's Haven Script",
 	LoadingSubtitle = "By Skinny & Fat Studios",
 	Theme = "Amethyst",
-	KeySystem = false -- Set true if you want to use key system
+	KeySystem = false
 })
 
 -- Tabs and sections
 local MainTab = Window:CreateTab("Farm")
 MainTab:CreateSection("Auto")
 
--- New Tab for AutoCrate
+-- New Tab for Auto features (used for Crates and Easter Egg)
 local AutoCrateTab = Window:CreateTab("Auto")
 AutoCrateTab:CreateSection("Crates")
+
+-- Auto Collect Crates Toggle
+local function getHRP()
+	local character = Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()
+	return character:FindFirstChild("HumanoidRootPart")
+end
+
+AutoCrateTab:CreateToggle({
+	Name = "Auto Collect Crates",
+	CurrentValue = false,
+	Flag = "AutoBoxes",
+	Callback = function(Value)
+		_G.AutoBoxes = Value
+		if Value then
+			task.spawn(function()
+				while _G.AutoBoxes do
+					pcall(function()
+						local hrp = getHRP()
+						if not hrp then return end
+						for _, box in pairs(Workspace:FindFirstChild("Boxes"):GetChildren()) do
+							firetouchinterest(hrp, box, 0)
+							task.wait(0.1)
+							firetouchinterest(hrp, box, 1)
+						end
+					end)
+					task.wait(2)
+				end
+			end)
+		end
+	end,
+})
 
 -- State variables
 local rebirthFarmingEnabled = false
@@ -38,9 +69,6 @@ local layoutDelay = 0
 local layoutOne = "Layout1"
 local layoutTwo = "Layout2"
 local autoRebirthEnabled = false
-local isAutoCrateEnabled = false
-local autoCrateConnection = nil  -- Connection to stop when AutoCrate is disabled
-local isAutoCrateActive = false  -- Track if AutoCrate is active
 local isEasterEggEnabled = false
 local stopEasterEggs = false
 
@@ -50,74 +78,6 @@ Players.LocalPlayer.Idled:Connect(function()
 	task.wait(1)
 	VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
-
--- Functions for AutoCrate
-local function startAutoCrate()
-	if isAutoCrateActive then return end  -- Prevent multiple instances of AutoCrate
-
-	isAutoCrateActive = true  -- Mark AutoCrate as active
-
-	if not game.Workspace:FindFirstChild("Boxes") then
-		warn("Boxes folder does not exist in Workspace!")
-		return
-	end
-
-	-- Function to interact with crates
-	local function interactWithCrates()
-		for _, v1 in pairs(game.Workspace.Boxes:GetChildren()) do
-			if v1:IsA("MeshPart") or v1:IsA("Part") then
-				local OldPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
-				game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v1.CFrame
-				wait(.1)
-				firetouchinterest(v1, game.Players.LocalPlayer.Character.HumanoidRootPart, 0)
-				firetouchinterest(v1, game.Players.LocalPlayer.Character.HumanoidRootPart, 1)
-				wait(.1)
-				game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = OldPos
-			end
-		end
-	end
-
-	-- Initial interaction with existing crates
-	interactWithCrates()
-
-	-- Handle new boxes as they are added
-	autoCrateConnection = game.Workspace.Boxes.ChildAdded:Connect(function(v1)
-		wait(.5)
-		if v1:IsA("MeshPart") or v1:IsA("Part") then
-			local OldPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
-			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v1.CFrame
-			wait(.1)
-			firetouchinterest(v1, game.Players.LocalPlayer.Character.HumanoidRootPart, 0)
-			firetouchinterest(v1, game.Players.LocalPlayer.Character.HumanoidRootPart, 1)
-			wait(.1)
-			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = OldPos
-		end
-	end)
-
-	-- Show notification when AutoCrate starts
-	game.StarterGui:SetCore("SendNotification", {
-		Title = "AutoCrate Script",
-		Text = "Script Made By _Meely"
-	})
-end
-
-local function stopAutoCrate()
-	if not isAutoCrateActive then return end  -- If it's already stopped, don't do anything
-
-	-- Disconnect the AutoCrate connection if it exists
-	if autoCrateConnection then
-		autoCrateConnection:Disconnect()
-		autoCrateConnection = nil
-	end
-
-	isAutoCrateActive = false  -- Mark AutoCrate as inactive
-
-	-- Show notification when AutoCrate stops
-	game.StarterGui:SetCore("SendNotification", {
-		Title = "AutoCrate Script",
-		Text = "AutoCrate stopped."
-	})
-end
 
 -- Main Functions
 local function loadLayouts()
@@ -174,10 +134,7 @@ MainTab:CreateToggle({
 	end
 })
 
--- Divider added below Auto Rebirth Toggle
 MainTab:CreateDivider()
-
--- Create the "Layouts" section right after the divider
 MainTab:CreateSection("Layouts")
 
 MainTab:CreateInput({
@@ -211,71 +168,48 @@ MainTab:CreateDropdown({
 	end
 })
 
--- UI Elements for AutoCrate Tab
-AutoCrateTab:CreateToggle({
-	Name = "AutoCrate",
-	CurrentValue = isAutoCrateEnabled,
-	Flag = "AutoCrateToggle",
-	Callback = function(state)
-		isAutoCrateEnabled = state
-		if isAutoCrateEnabled then
-			startAutoCrate()
-		else
-			stopAutoCrate()
-		end
-	end
-})
-
--- Divider added between AutoCrate and Easter Egg toggle
-AutoCrateTab:CreateDivider()
-
--- Create the "Easter" section right after the divider in the AutoCrate tab
+-- Easter Egg Section
 AutoCrateTab:CreateSection("Easter")
 
--- Easter Egg Interaction Code
-local function interactWithEasterEggs()
-	local originalPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame  -- Save original position
+local function teleportEggsToPlayer()
+	local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
 	local easterthing = Workspace:FindFirstChild("Easter")
-	if not easterthing then return end
+	local mapthing = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("EGG_SPAWNS")
 
-	local mapthing = Workspace.Map:FindFirstChild("EGG_SPAWNS")
-	if not mapthing then return end
+	if not easterthing and not mapthing then return end
 
-	-- Easter Island Egg Spawns
-	local eggSpawns = easterthing:FindFirstChild("EASTER ISLAND EGG SPAWNS")
+	local eggSpawns = easterthing and easterthing:FindFirstChild("EASTER ISLAND EGG SPAWNS")
 	if eggSpawns then
-		for _, v in ipairs(eggSpawns:GetChildren()) do
-			if #v:GetChildren() > 0 then
-				for _, child in ipairs(v:GetChildren()) do
-					if stopEasterEggs then return end
-					game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = child.CFrame
-					task.wait(.5)
-					fireproximityprompt(child.ProximityPrompt)
-					wait(.5)
+		for _, container in ipairs(eggSpawns:GetChildren()) do
+			for _, egg in ipairs(container:GetChildren()) do
+				if stopEasterEggs then return end
+				if egg:IsA("BasePart") then
+					egg.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
+					task.wait(0.5)
+					if egg:FindFirstChild("ProximityPrompt") then
+						fireproximityprompt(egg.ProximityPrompt)
+					end
 				end
 			end
 		end
 	end
 
-	-- Map Egg Spawns interaction
 	if mapthing then
-		for _, v in ipairs(mapthing:GetChildren()) do
-			if #v:GetChildren() > 0 then
-				for _, child in ipairs(v:GetChildren()) do
-					if stopEasterEggs then return end  -- Stop interaction if toggle is disabled
-					print(child.Name)
-					child:FindFirstChild("ProximityPrompt")
-					game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = child.CFrame
-					task.wait(.5)
-					fireproximityprompt(child.ProximityPrompt)
-					wait(.5)
+		for _, container in ipairs(mapthing:GetChildren()) do
+			for _, egg in ipairs(container:GetChildren()) do
+				if stopEasterEggs then return end
+				if egg:IsA("BasePart") then
+					egg.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
+					task.wait(0.5)
+					if egg:FindFirstChild("ProximityPrompt") then
+						fireproximityprompt(egg.ProximityPrompt)
+					end
 				end
 			end
 		end
 	end
-
-	-- Restore original position after all interactions are done
-	game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = originalPosition
 end
 
 AutoCrateTab:CreateToggle({
@@ -284,14 +218,9 @@ AutoCrateTab:CreateToggle({
 	Flag = "EasterEggToggle",
 	Callback = function(state)
 		isEasterEggEnabled = state
-		stopEasterEggs = not state  -- Stop interacting with Easter eggs when toggle is off
+		stopEasterEggs = not state
 		if state then
-			-- Start interacting with Easter eggs
-			interactWithEasterEggs()
-		else
-			-- Return to original position if AutoEgg is toggled off
-			local originalPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
-			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = originalPosition
+			teleportEggsToPlayer()
 		end
 	end
 })
