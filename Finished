@@ -171,45 +171,46 @@ MainTab:CreateDropdown({
 -- Easter Egg Section
 AutoCrateTab:CreateSection("Easter")
 
-local function teleportEggsToPlayer()
-	local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
-
+local function interactWithEasterEggs()
+	local originalPosition = Players.LocalPlayer.Character.HumanoidRootPart.CFrame
 	local easterthing = Workspace:FindFirstChild("Easter")
-	local mapthing = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("EGG_SPAWNS")
+	if not easterthing then return end
 
-	if not easterthing and not mapthing then return end
+	local mapthing = Workspace.Map:FindFirstChild("EGG_SPAWNS")
+	if not mapthing then return end
 
-	local eggSpawns = easterthing and easterthing:FindFirstChild("EASTER ISLAND EGG SPAWNS")
+	local eggSpawns = easterthing:FindFirstChild("EASTER ISLAND EGG SPAWNS")
 	if eggSpawns then
-		for _, container in ipairs(eggSpawns:GetChildren()) do
-			for _, egg in ipairs(container:GetChildren()) do
-				if stopEasterEggs then return end
-				if egg:IsA("BasePart") then
-					egg.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
+		for _, v in ipairs(eggSpawns:GetChildren()) do
+			if #v:GetChildren() > 0 then
+				for _, child in ipairs(v:GetChildren()) do
+					if stopEasterEggs then return end
+					Players.LocalPlayer.Character.HumanoidRootPart.CFrame = child.CFrame
 					task.wait(0.5)
-					if egg:FindFirstChild("ProximityPrompt") then
-						fireproximityprompt(egg.ProximityPrompt)
-					end
+					fireproximityprompt(child.ProximityPrompt)
+					wait(0.5)
 				end
 			end
 		end
 	end
 
 	if mapthing then
-		for _, container in ipairs(mapthing:GetChildren()) do
-			for _, egg in ipairs(container:GetChildren()) do
-				if stopEasterEggs then return end
-				if egg:IsA("BasePart") then
-					egg.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
+		for _, v in ipairs(mapthing:GetChildren()) do
+			if #v:GetChildren() > 0 then
+				for _, child in ipairs(v:GetChildren()) do
+					if stopEasterEggs then return end
+					print(child.Name)
+					child:FindFirstChild("ProximityPrompt")
+					Players.LocalPlayer.Character.HumanoidRootPart.CFrame = child.CFrame
 					task.wait(0.5)
-					if egg:FindFirstChild("ProximityPrompt") then
-						fireproximityprompt(egg.ProximityPrompt)
-					end
+					fireproximityprompt(child.ProximityPrompt)
+					wait(0.5)
 				end
 			end
 		end
 	end
+
+	Players.LocalPlayer.Character.HumanoidRootPart.CFrame = originalPosition
 end
 
 AutoCrateTab:CreateToggle({
@@ -220,7 +221,10 @@ AutoCrateTab:CreateToggle({
 		isEasterEggEnabled = state
 		stopEasterEggs = not state
 		if state then
-			teleportEggsToPlayer()
+			interactWithEasterEggs()
+		else
+			local originalPosition = Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+			Players.LocalPlayer.Character.HumanoidRootPart.CFrame = originalPosition
 		end
 	end
 })
