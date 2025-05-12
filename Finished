@@ -1,43 +1,159 @@
--- Services
+--// Services & Player Setup
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualUser = game:GetService("VirtualUser")
 local Workspace = game:GetService("Workspace")
+local VirtualUser = game:GetService("VirtualUser")
+local LocalPlayer = Players.LocalPlayer
+local value = LocalPlayer:WaitForChild("Rebirths")
 
--- Player references
-local self = Players.LocalPlayer
-local char = self.Character or self.CharacterAdded:Wait()
-local root = char:WaitForChild("HumanoidRootPart")
-local mouse = self:GetMouse()
-local value = self:WaitForChild("Rebirths")
-
--- Load Rayfield
+--// Rayfield UI Loader
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Window
+--// Window
 local Window = Rayfield:CreateWindow({
-	Name = "Shhhhh! - Meely & Adonis",
+	Name = "Miner's Haven",
 	LoadingTitle = "Miner's Haven Script",
 	LoadingSubtitle = "By Skinny & Fat Studios",
+	ConfigurationSaving = {
+		Enabled = true,
+		FolderName = "MHConfigs",
+		FileName = "RebirthFarm"
+	},
+	Discord = {
+		Enabled = false,
+		Invite = "",
+		RememberJoins = false
+	},
 	Theme = "Amethyst",
 	KeySystem = false
 })
 
--- Tabs and sections
-local MainTab = Window:CreateTab("Farm")
-MainTab:CreateSection("Auto")
+--// Variables
+getgenv().duration = 0
+getgenv().layoutone = "Layout1"
+getgenv().layoutwo = "Layout2"
 
--- New Tab for Auto features (used for Crates and Easter Egg)
-local AutoCrateTab = Window:CreateTab("Auto")
-AutoCrateTab:CreateSection("Crates")
-
--- Auto Collect Crates Toggle
-local function getHRP()
-	local character = Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()
-	return character:FindFirstChild("HumanoidRootPart")
+--// Functions
+function loadLayouts()
+	task.spawn(function()
+		print("Loading Layout 1:", getgenv().layoutone)
+		ReplicatedStorage.Layouts:InvokeServer("Load", getgenv().layoutone)
+		task.wait(getgenv().duration or 1)
+		if getgenv().seclayout then
+			print("Loading Layout 2:", getgenv().layoutwo)
+			ReplicatedStorage.Layouts:InvokeServer("Load", getgenv().layoutwo)
+		end
+	end)
 end
 
-AutoCrateTab:CreateToggle({
+function farmRebirth()
+	task.spawn(function()
+		while getgenv().aReb do
+			ReplicatedStorage.Rebirth:InvokeServer(26)
+			task.wait()
+		end
+	end)
+end
+
+--// Anti-AFK
+LocalPlayer.Idled:Connect(function()
+	VirtualUser:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+	task.wait(1)
+	VirtualUser:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+end)
+
+--// FARM TAB
+local MainTab = Window:CreateTab("Farm")
+
+-- Choose Layouts Section
+MainTab:CreateSection("Choose Layouts")
+
+MainTab:CreateDropdown({
+	Name = "First Layout",
+	Options = {"Layout1", "Layout2", "Layout3"},
+	CurrentOption = "Layout1",
+	Callback = function(Content)
+		local selection = typeof(Content) == "table" and Content[1] or Content
+		getgenv().layoutone = selection
+		print("Selected Layout 1:", selection)
+	end,
+})
+
+MainTab:CreateDropdown({
+	Name = "Second Layout",
+	Options = {"Layout1", "Layout2", "Layout3"},
+	CurrentOption = "Layout2",
+	Callback = function(Content)
+		local selection = typeof(Content) == "table" and Content[1] or Content
+		getgenv().layoutwo = selection
+		print("Selected Layout 2:", selection)
+	end,
+})
+
+MainTab:CreateInput({
+	Name = "Time Between Layouts (sec)",
+	PlaceholderText = "Default is 0",
+	RemoveTextAfterFocusLost = false, -- Keep the input visible
+	Text = tostring(getgenv().duration), -- Display current duration
+	Callback = function(Text)
+		local num = tonumber(Text)
+		if num and num >= 0 then
+			getgenv().duration = num
+			print("Duration set to", num)
+		end
+	end,
+})
+
+MainTab:CreateDivider()
+MainTab:CreateSection("Auto-Reborn")
+
+MainTab:CreateToggle({
+	Name = "Enable Second Layout?",
+	CurrentValue = false,
+	Callback = function(Value)
+		getgenv().seclayout = Value
+	end,
+})
+
+MainTab:CreateToggle({
+	Name = "Auto Rebirth",
+	CurrentValue = false,
+	Callback = function(Value)
+		getgenv().aReb = Value
+		if Value then
+			farmRebirth()
+		end
+	end,
+})
+
+MainTab:CreateToggle({
+	Name = "Rebirth Farm",
+	CurrentValue = false,
+	Callback = function(Value)
+		getgenv().rebfarm = Value
+		if Value then
+			loadLayouts()
+		end
+	end,
+})
+
+value:GetPropertyChangedSignal("Value"):Connect(function()
+	task.wait(0.75)
+	if getgenv().rebfarm then
+		loadLayouts()
+	end
+end)
+
+-- AUTO TAB
+local AutoTab = Window:CreateTab("Auto")
+AutoTab:CreateSection("Crates")
+
+local function getHRP()
+	local char = Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()
+	return char:FindFirstChild("HumanoidRootPart")
+end
+
+AutoTab:CreateToggle({
 	Name = "Auto Collect Crates",
 	CurrentValue = false,
 	Flag = "AutoBoxes",
@@ -62,117 +178,15 @@ AutoCrateTab:CreateToggle({
 	end,
 })
 
--- State variables
-local rebirthFarmingEnabled = false
-local enableSecondLayout = false
-local layoutDelay = 0
-local layoutOne = "Layout1"
-local layoutTwo = "Layout2"
-local autoRebirthEnabled = false
+AutoTab:CreateDivider()
+AutoTab:CreateSection("Easter")
+
 local isEasterEggEnabled = false
 local stopEasterEggs = false
 
--- Anti-AFK
-Players.LocalPlayer.Idled:Connect(function()
-	VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-	task.wait(1)
-	VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-end)
-
--- Main Functions
-local function loadLayouts()
-	task.spawn(function()
-		ReplicatedStorage.Layouts:InvokeServer("Load", layoutOne)
-		task.wait(layoutDelay)
-		if enableSecondLayout then
-			ReplicatedStorage.Layouts:InvokeServer("Load", layoutTwo)
-		end
-	end)
-end
-
-local function farmRebirth()
-	task.spawn(function()
-		while autoRebirthEnabled do
-			ReplicatedStorage.Rebirth:InvokeServer(26)
-			task.wait()
-		end
-	end)
-end
-
--- UI Elements for Main Tab
-MainTab:CreateToggle({
-	Name = "Rebirth Farm",
-	CurrentValue = false,
-	Flag = "rebfarm",
-	Callback = function(val)
-		rebirthFarmingEnabled = val
-		if val then
-			loadLayouts()
-			farmRebirth()
-		end
-	end
-})
-
-MainTab:CreateToggle({
-	Name = "Enable Second Layout?",
-	CurrentValue = false,
-	Flag = "seclayout",
-	Callback = function(val)
-		enableSecondLayout = val
-	end
-})
-
-MainTab:CreateToggle({
-	Name = "Auto Rebirth",
-	CurrentValue = false,
-	Flag = "aReb",
-	Callback = function(val)
-		autoRebirthEnabled = val
-		if val then
-			farmRebirth()
-		end
-	end
-})
-
-MainTab:CreateDivider()
-MainTab:CreateSection("Layouts")
-
-MainTab:CreateInput({
-	Name = "Time Between Layouts (Seconds)",
-	PlaceholderText = "0",
-	RemoveTextAfterFocusLost = true,
-	Callback = function(val)
-		layoutDelay = tonumber(val) or 0
-	end
-})
-
-MainTab:CreateDropdown({
-	Name = "Choose First Layout",
-	Options = {"Layout1", "Layout2", "Layout3"},
-	CurrentOption = "Layout1",
-	Flag = "layoutone",
-	Callback = function(option)
-		layoutOne = option
-		print("Selected:", option)
-	end
-})
-
-MainTab:CreateDropdown({
-	Name = "Choose Second Layout",
-	Options = {"Layout1", "Layout2", "Layout3"},
-	CurrentOption = "Layout2",
-	Flag = "layoutwo",
-	Callback = function(option)
-		layoutTwo = option
-		print("Selected:", option)
-	end
-})
-
--- Easter Egg Section
-AutoCrateTab:CreateSection("Easter")
-
 local function interactWithEasterEggs()
-	local originalPosition = Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+	local root = Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+	local originalPosition = root.CFrame
 	local easterthing = Workspace:FindFirstChild("Easter")
 	if not easterthing then return end
 
@@ -182,38 +196,30 @@ local function interactWithEasterEggs()
 	local eggSpawns = easterthing:FindFirstChild("EASTER ISLAND EGG SPAWNS")
 	if eggSpawns then
 		for _, v in ipairs(eggSpawns:GetChildren()) do
-			if #v:GetChildren() > 0 then
-				for _, child in ipairs(v:GetChildren()) do
-					if stopEasterEggs then return end
-					Players.LocalPlayer.Character.HumanoidRootPart.CFrame = child.CFrame
-					task.wait(0.5)
-					fireproximityprompt(child.ProximityPrompt)
-					wait(0.5)
-				end
+			for _, child in ipairs(v:GetChildren()) do
+				if stopEasterEggs then return end
+				root.CFrame = child.CFrame
+				task.wait(0.5)
+				fireproximityprompt(child:FindFirstChild("ProximityPrompt"))
+				task.wait(0.5)
 			end
 		end
 	end
 
-	if mapthing then
-		for _, v in ipairs(mapthing:GetChildren()) do
-			if #v:GetChildren() > 0 then
-				for _, child in ipairs(v:GetChildren()) do
-					if stopEasterEggs then return end
-					print(child.Name)
-					child:FindFirstChild("ProximityPrompt")
-					Players.LocalPlayer.Character.HumanoidRootPart.CFrame = child.CFrame
-					task.wait(0.5)
-					fireproximityprompt(child.ProximityPrompt)
-					wait(0.5)
-				end
-			end
+	for _, v in ipairs(mapthing:GetChildren()) do
+		for _, child in ipairs(v:GetChildren()) do
+			if stopEasterEggs then return end
+			root.CFrame = child.CFrame
+			task.wait(0.5)
+			fireproximityprompt(child:FindFirstChild("ProximityPrompt"))
+			task.wait(0.5)
 		end
 	end
 
-	Players.LocalPlayer.Character.HumanoidRootPart.CFrame = originalPosition
+	root.CFrame = originalPosition
 end
 
-AutoCrateTab:CreateToggle({
+AutoTab:CreateToggle({
 	Name = "AutoEgg",
 	CurrentValue = isEasterEggEnabled,
 	Flag = "EasterEggToggle",
@@ -222,17 +228,6 @@ AutoCrateTab:CreateToggle({
 		stopEasterEggs = not state
 		if state then
 			interactWithEasterEggs()
-		else
-			local originalPosition = Players.LocalPlayer.Character.HumanoidRootPart.CFrame
-			Players.LocalPlayer.Character.HumanoidRootPart.CFrame = originalPosition
 		end
 	end
 })
-
--- Auto load when Rebirths value changes
-value:GetPropertyChangedSignal("Value"):Connect(function()
-	task.wait(0.75)
-	if rebirthFarmingEnabled then
-		loadLayouts()
-	end
-end)
